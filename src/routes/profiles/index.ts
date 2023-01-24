@@ -3,21 +3,23 @@ import { idParamSchema } from '../../utils/reusedSchemas';
 import { createProfileBodySchema, changeProfileBodySchema } from './schema';
 import type { ProfileEntity } from '../../utils/DB/entities/DBProfiles';
 
-const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
-  fastify
-): Promise<void> => {
-  fastify.get('/', async function (request, reply): Promise<
-    ProfileEntity[]
-  > {});
+const plugin: FastifyPluginAsyncJsonSchemaToTs = async (fastify): Promise<void> => {
 
-  fastify.get(
-    '/:id',
+  fastify.get('/', async function (request, reply): Promise<ProfileEntity[]> {
+    return this.db.profiles.findMany()
+  });
+
+  fastify.get('/:id',
     {
       schema: {
         params: idParamSchema,
       },
     },
-    async function (request, reply): Promise<ProfileEntity> {}
+    async function (request, reply): Promise<ProfileEntity> {
+      const { id } = request.params;
+      const profile = this.db.profiles.findOne({key: 'id', equals: id}) as Promise<ProfileEntity>;
+      return profile;
+    }
   );
 
   fastify.post(
@@ -27,7 +29,10 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
         body: createProfileBodySchema,
       },
     },
-    async function (request, reply): Promise<ProfileEntity> {}
+    async function (request, reply): Promise<ProfileEntity> {
+      const profile = request.body;
+      return this.db.profiles.create(profile);
+    }
   );
 
   fastify.delete(
@@ -37,7 +42,11 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
         params: idParamSchema,
       },
     },
-    async function (request, reply): Promise<ProfileEntity> {}
+    async function (request, reply): Promise<ProfileEntity> {
+      const { id } = request.params;
+      // const profile = this.db.profiles.findOne({key: 'id', equals: id}) as Promise<ProfileEntity>;
+      return this.db.profiles.delete(id);
+    }
   );
 
   fastify.patch(
@@ -48,7 +57,12 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
         params: idParamSchema,
       },
     },
-    async function (request, reply): Promise<ProfileEntity> {}
+    async function (request, reply): Promise<ProfileEntity> {
+      const { id } = request.params;
+      const updProfile = request.body;
+      // const profile = this.db.profiles.findOne({key: 'id', equals: id}) as Promise<ProfileEntity>;
+      return this.db.profiles.change(id, updProfile)
+    }
   );
 };
 
