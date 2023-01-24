@@ -17,6 +17,10 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (fastify): Promise<void> 
     },
     async function (request, reply): Promise<PostEntity> {
       const {id} = request.params;
+      const result = await this.db.posts.findOne({key: 'id', equals: id});
+      if(result === null) {
+        throw reply.code(404)
+      }
       return this.db.posts.findOne({key: 'id', equals: id}) as Promise<PostEntity>;
     }
   );
@@ -43,6 +47,10 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (fastify): Promise<void> 
     },
     async function (request, reply): Promise<PostEntity> {
       const {id} = request.params;
+      const result = await this.db.posts.findOne({key: 'id', equals: id});
+      if(result === null) {
+        throw reply.code(400)
+      }
       return this.db.posts.delete(id);
     }
   );
@@ -58,15 +66,11 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (fastify): Promise<void> 
     async function (request, reply): Promise<PostEntity> {
       const {id} = request.params;
       const updPost = request.body;
-      return this.db.posts.change(id, updPost);
-      // const post = await this.db.posts.findOne({key: 'id', equals: id});
-      // if(!post){
-      //   reply.callNotFound()
-      //   return new Promise(res=>res)
-      // } else {
-      //   const obj = {...post, ...updPost} as PostEntity;
-      //   return this.db.posts.change(id, obj);
-      // }
+      const result = await this.db.posts.findOne({key: 'id', equals: id});
+      if(result === null) {
+        throw reply.code(400)
+      }
+      return this.db.posts.change(id, {...result, ...updPost});
     }
   );
 };

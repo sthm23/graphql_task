@@ -6,6 +6,7 @@ import {
   subscribeBodySchema,
 } from './schemas';
 import type { UserEntity } from '../../utils/DB/entities/DBUsers';
+import validator from 'validator';
 
 const plugin: FastifyPluginAsyncJsonSchemaToTs = async (fastify): Promise<void> => {
   fastify.get('/', async function (request, reply): Promise<UserEntity[]> {
@@ -21,12 +22,11 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (fastify): Promise<void> 
     },
     async function (request, reply): Promise<UserEntity> {
       const { id } = request.params;
-      // const users = await this.db.users.findMany();
-      // const user = users.find(el=> el.id === id)!;
-      // return new Promise(resolve=>resolve({user}))
-
-      const user = this.db.users.findOne({key: 'id', equals: id}) as Promise<UserEntity>
-      return user;
+      const result = await this.db.users.findOne({key: 'id', equals: id});
+      if(result === null || !validator.isUUID(id)) {
+        throw reply.code(404)
+      }
+      return this.db.users.findOne({key: 'id', equals: id}) as Promise<UserEntity>;
     }
   );
 
@@ -52,6 +52,10 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (fastify): Promise<void> 
     },
     async function (request, reply): Promise<UserEntity> {
       const {id} = request.params;
+      const result = await this.db.users.findOne({key: 'id', equals: id});
+      if(result === null) {
+        throw reply.code(400)
+      }
       return this.db.users.delete(id);
     }
   );
@@ -67,7 +71,10 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (fastify): Promise<void> 
     async function (request, reply): Promise<UserEntity> {
       const {id} = request.params;
       const {userId} = request.body;
-      const user = await this.db.users.findOne({key: 'id', equals: id}) as UserEntity;
+      const user = await this.db.users.findOne({key: 'id', equals: id});
+      if(user === null || !validator.isUUID(userId)) {
+        throw reply.code(400)
+      }
       user.subscribedToUserIds.push(userId)
       return this.db.users.change(id, user);
     }
@@ -84,7 +91,10 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (fastify): Promise<void> 
     async function (request, reply): Promise<UserEntity> {
       const {id} = request.params;
       const {userId} = request.body;
-      const user = await this.db.users.findOne({key: 'id', equals: id}) as UserEntity;
+      const user = await this.db.users.findOne({key: 'id', equals: id});
+      if(user === null || !validator.isUUID(userId) || !user.subscribedToUserIds.includes(userId)) {
+        throw reply.code(400)
+      }
       const arr = user.subscribedToUserIds.filter(el=>el !== userId);
       user.subscribedToUserIds = arr;
       return this.db.users.change(id, user);
@@ -102,8 +112,11 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (fastify): Promise<void> 
     async function (request, reply): Promise<UserEntity> {
       const {id} = request.params;
       const updUserObj = request.body;
-      const updUser = this.db.users.change(id, updUserObj)
-      return updUser;
+      const result = await this.db.users.findOne({key: 'id', equals: id});
+      if(result === null || !validator.isUUID(id)) {
+        throw reply.code(400)
+      }
+      return this.db.users.change(id, {...result, ...updUserObj});
     }
   );
 };

@@ -2,6 +2,7 @@ import { FastifyPluginAsyncJsonSchemaToTs } from '@fastify/type-provider-json-sc
 import { idParamSchema } from '../../utils/reusedSchemas';
 import { createProfileBodySchema, changeProfileBodySchema } from './schema';
 import type { ProfileEntity } from '../../utils/DB/entities/DBProfiles';
+import validator from 'validator';
 
 const plugin: FastifyPluginAsyncJsonSchemaToTs = async (fastify): Promise<void> => {
 
@@ -17,8 +18,11 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (fastify): Promise<void> 
     },
     async function (request, reply): Promise<ProfileEntity> {
       const { id } = request.params;
-      const profile = this.db.profiles.findOne({key: 'id', equals: id}) as Promise<ProfileEntity>;
-      return profile;
+      const result = await this.db.profiles.findOne({key: 'id', equals: id});
+      if(result === null) {
+        throw reply.code(404)
+      }
+      return this.db.profiles.findOne({key: 'id', equals: id}) as Promise<ProfileEntity>;;
     }
   );
 
@@ -31,6 +35,14 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (fastify): Promise<void> 
     },
     async function (request, reply): Promise<ProfileEntity> {
       const profile = request.body;
+      const check = validator.isUUID(profile.userId) && ['business', 'basic'].includes(profile.memberTypeId)
+      if(!check) {
+        throw reply.code(400)
+      }
+      const existProfile = await this.db.profiles.findOne({key: 'userId', equals: profile.userId});
+      if (existProfile !== null) {
+        throw reply.code(400)
+      }
       return this.db.profiles.create(profile);
     }
   );
@@ -44,7 +56,10 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (fastify): Promise<void> 
     },
     async function (request, reply): Promise<ProfileEntity> {
       const { id } = request.params;
-      // const profile = this.db.profiles.findOne({key: 'id', equals: id}) as Promise<ProfileEntity>;
+      const result = await this.db.profiles.findOne({key: 'id', equals: id});
+      if(result === null) {
+        throw reply.code(400)
+      }
       return this.db.profiles.delete(id);
     }
   );
@@ -60,8 +75,11 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (fastify): Promise<void> 
     async function (request, reply): Promise<ProfileEntity> {
       const { id } = request.params;
       const updProfile = request.body;
-      // const profile = this.db.profiles.findOne({key: 'id', equals: id}) as Promise<ProfileEntity>;
-      return this.db.profiles.change(id, updProfile)
+      const result = await this.db.profiles.findOne({key: 'id', equals: id});
+      if(result === null) {
+        throw reply.code(400)
+      }
+      return this.db.profiles.change(id, {...result, ...updProfile})
     }
   );
 };
