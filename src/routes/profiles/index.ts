@@ -19,10 +19,14 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (fastify): Promise<void> 
     async function (request, reply): Promise<ProfileEntity> {
       const { id } = request.params;
       const result = await this.db.profiles.findOne({key: 'id', equals: id});
-      if(result === null) {
+      const users = await this.db.users.findMany();
+      const checkUser = users.find(user=>user.id === result?.userId);
+
+      if(result === null || !validator.isUUID(id) || checkUser === undefined) {
         throw reply.code(404)
       }
-      return this.db.profiles.findOne({key: 'id', equals: id}) as Promise<ProfileEntity>;;
+
+      return this.db.profiles.findOne({key: 'id', equals: id}) as Promise<ProfileEntity>;
     }
   );
 

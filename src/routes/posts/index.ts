@@ -2,6 +2,7 @@ import { FastifyPluginAsyncJsonSchemaToTs } from '@fastify/type-provider-json-sc
 import { idParamSchema } from '../../utils/reusedSchemas';
 import { createPostBodySchema, changePostBodySchema } from './schema';
 import type { PostEntity } from '../../utils/DB/entities/DBPosts';
+import validator from 'validator';
 
 const plugin: FastifyPluginAsyncJsonSchemaToTs = async (fastify): Promise<void> => {
   fastify.get('/', async function (request, reply): Promise<PostEntity[]> {
@@ -18,7 +19,9 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (fastify): Promise<void> 
     async function (request, reply): Promise<PostEntity> {
       const {id} = request.params;
       const result = await this.db.posts.findOne({key: 'id', equals: id});
-      if(result === null) {
+      const users = await this.db.users.findMany();
+      const checkUser = users.find(user=>user.id === result?.userId);
+      if(result === null || !validator.isUUID(id) || checkUser===undefined) {
         throw reply.code(404)
       }
       return this.db.posts.findOne({key: 'id', equals: id}) as Promise<PostEntity>;
@@ -74,5 +77,6 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (fastify): Promise<void> 
     }
   );
 };
+
 
 export default plugin;

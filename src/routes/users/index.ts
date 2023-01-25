@@ -52,10 +52,17 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (fastify): Promise<void> 
     },
     async function (request, reply): Promise<UserEntity> {
       const {id} = request.params;
-      const result = await this.db.users.findOne({key: 'id', equals: id});
-      if(result === null) {
+      const user = await this.db.users.findOne({key: 'id', equals: id});
+      if(user === null) {
         throw reply.code(400)
       }
+      const users = (await this.db.users.findMany()).filter(user=> user.subscribedToUserIds.includes(id));
+      users.forEach(async (user)=>{
+        const arr = user.subscribedToUserIds.filter(el=> el !== id);
+        user.subscribedToUserIds = arr;
+        await this.db.users.change(user.id, user);
+      });
+
       return this.db.users.delete(id);
     }
   );
@@ -71,12 +78,13 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (fastify): Promise<void> 
     async function (request, reply): Promise<UserEntity> {
       const {id} = request.params;
       const {userId} = request.body;
-      const user = await this.db.users.findOne({key: 'id', equals: id});
-      if(user === null || !validator.isUUID(userId)) {
+      const user1 = await this.db.users.findOne({key: 'id', equals: id});
+      const user = await this.db.users.findOne({key: 'id', equals: userId});
+      if(user1 === null || user === null || !validator.isUUID(userId) || !validator.isUUID(id)) {
         throw reply.code(400)
       }
-      user.subscribedToUserIds.push(userId)
-      return this.db.users.change(id, user);
+      user.subscribedToUserIds.push(id)
+      return this.db.users.change(userId, user);
     }
   );
 
@@ -91,13 +99,13 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (fastify): Promise<void> 
     async function (request, reply): Promise<UserEntity> {
       const {id} = request.params;
       const {userId} = request.body;
-      const user = await this.db.users.findOne({key: 'id', equals: id});
-      if(user === null || !validator.isUUID(userId) || !user.subscribedToUserIds.includes(userId)) {
+      const user = await this.db.users.findOne({key: 'id', equals: userId});
+      if(user === null || !validator.isUUID(userId) || !user.subscribedToUserIds.includes(id)) {
         throw reply.code(400)
       }
-      const arr = user.subscribedToUserIds.filter(el=>el !== userId);
+      const arr = user.subscribedToUserIds.filter(el=>el !== id);
       user.subscribedToUserIds = arr;
-      return this.db.users.change(id, user);
+      return this.db.users.change(userId, user);
     }
   );
 
