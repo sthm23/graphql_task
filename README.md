@@ -5,7 +5,7 @@
 2. Add logic to the graphql endpoint (graphql folder in ./src/routes).  
 Constraints and logic for gql queries should be done based on restful implementation.  
 For each subtask provide an example of POST body in the PR.  
-All dynamic values should be sent vie "variables" field.  
+All dynamic values should be sent via "variables" field.  
 If the properties of the entity are not specified, then return the id of it.  
 `userSubscribedTo` - these are users that the current user is following.  
 `subscribedToUser` - these are users who are following the current user.  
@@ -33,6 +33,7 @@ If the properties of the entity are not specified, then return the id of it.
 
 3. Solve `n+1` graphql problem with [dataloader](https://www.npmjs.com/package/dataloader) package in all places where it should be used.  
    You can use only one "findMany" call per loader to consider this task completed.  
+   It's ok to leave the use of the dataloader even if only one entity was requested. But additionally (no extra score) you can optimize the behavior for such cases => +1 db call is allowed per loader.  
    3.1. List where the dataloader was used with links to the lines of code (creation in gql context and call in resolver).  
 4. Limit the complexity of the graphql queries by their depth with [graphql-depth-limit](https://www.npmjs.com/package/graphql-depth-limit) package.   
    4.1. Provide a link to the line of code where it was used.  
@@ -56,7 +57,7 @@ Relation fields are only stored in dependent/child entities. E.g. profile stores
 You are also responsible for verifying that the relations are real. E.g. "userId" belongs to the real user.  
 So when you delete dependent entity, you automatically delete relations with its parents.  
 But when you delete parent entity, you need to delete relations from child entities yourself to keep the data relevant.   
-(In the next rss-school task, you will use a full-fledged database that also can automatically remove relations when the parent is deleted)  
+(In the next rss-school task, you will use a full-fledged database that also can automatically remove child entities when the parent is deleted, verify keys ownership and instead of arrays for storing keys, you will use additional "join" tables)  
 
 To determine that all your restful logic works correctly => run the script "npm run test".  
 But be careful because these tests are integration (E.g. to test "delete" logic => it creates the entity via a "create" endpoint).  
