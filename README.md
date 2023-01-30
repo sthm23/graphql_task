@@ -74,3 +74,266 @@ If you have chosen a non-default gql environment, then the connection of some fu
 Limit the complexity of the graphql queries by their depth with "graphql-depth-limit" package.  
 E.g. User can refer to other users via properties `userSubscribedTo`, `subscribedToUser` and users within them can also have `userSubscribedTo`, `subscribedToUser` and so on.  
 Your task is to add a new rule (created by "graphql-depth-limit") in [validation](https://graphql.org/graphql-js/validation/) to limit such nesting to (for example) 6 levels max.
+
+
+```
+2.1
+query{
+    users{id firstName}
+    profiles{id}
+    posts{id}
+    memberTypes{id}
+}
+2.2
+query($userId: ID!, $postId: ID!, $profileId: ID!, $memberTypeId: String!){
+    user(id: $userId){
+        id
+        firstName
+    }
+    post(id: $postId) {
+        title
+    }
+    profile(id: $profileId) {
+        id
+        country
+    }
+    memberType(id: $memberTypeId) {
+        id
+    }
+}
+variables
+{
+    "userId": "a26c4a6c-575c-4b21-ade2-19c858f07ad9",
+    "postId": "cf738ec8-7950-4085-929b-254045f0c0b2",
+    "profileId": "25f11613-62a1-4111-ab67-a1ee4fba63c9",
+    "memberTypeId": "basic"
+}
+
+2.3
+query{
+    users{
+        id
+        firstName
+        userPost{id}
+        userProfile{id memberTypeId}
+        userMemberType{id}
+
+    }
+}
+2.4
+query($id: ID!){
+    user(id: $id){
+        id
+        firstName
+        userProfile{id}
+        userPost{id}
+        userMemberType{id}  
+    }
+}
+variables 
+{
+    "id": "d18a5914-a694-4320-bb0b-3601447eaa8b"
+}
+
+2.5
+query{
+    users{
+        id 
+        subscribedToUserIds 
+        userProfile{
+            id 
+        }
+        userSubscribedTo{
+            id firstName
+        }
+    }
+}
+
+variables
+{
+    "id": "d15b30a0-189b-452a-9124-95198d01de3e"
+}
+2.6
+query($id:ID!){
+    user(id:$id){
+        id 
+        subscribedToUserIds 
+        userPost{
+            id 
+        }
+        userSubscribedTo{
+            id firstName
+        }
+    }
+}
+variables
+{
+    "id": "05594071-15e5-4650-a9e6-6f3cc858d2b1"
+}
+2.7
+query{
+    users{
+        id 
+        subscribedToUserIds 
+        userProfile{
+            id 
+        }
+        userSubscribedTo{
+            id firstName
+        }
+        subscribedToUser{
+            id firstName
+        }
+    }
+}
+{
+    "id": "4dee9d25-b6c9-4c51-9bc8-a6a0f332613e"
+}
+2.8 mutations
+mutation($input: CreateUserType!){
+    createUser(input: $input) {
+        id
+        firstName
+    }
+}
+{
+    "input": {
+        "firstName": "user3",
+        "lastName": "user1",
+        "email": "user1"
+    }
+}
+2.9
+mutation($input: CreateProfileType!){
+    createProfile(input: $input) {
+        id
+        avatar
+    }
+}
+variables
+{
+    "input": {
+        "userId": "20f29832-e74b-4029-880a-8509748de09f",
+        "avatar": "user1",
+        "sex": "user1",
+        "birthday": 23,
+        "country": "user12",
+        "city": "user12",
+        "street": "user12",
+        "memberTypeId": "basic"
+    }
+}
+2.10
+mutation($input: CreatePostType!){
+    createPost(input: $input) {
+        id
+        userId
+    }
+}
+variables
+{
+    "input": {
+        "title": "post1",
+        "content": "post1",
+        "userId": "20f29832-e74b-4029-880a-8509748de09f"
+    }
+}
+2.12
+mutation($input: CreateUserType!){
+    createUser(input: $input) {
+        id
+        firstName
+    }
+}
+variables 
+{
+    "input": {
+        "firstName": "user1",
+        "lastName": "user1",
+        "email": "user1"
+    }
+}
+2.13
+mutation($input: UpdateProfileType!){
+    updateProfile(input: $input) {
+        id
+        avatar
+    }
+}
+variables
+{
+    "input": {
+        "id": "a6723e6b-2fe8-41e6-b912-18b40f26f439",
+        "userId": "beb9ba89-7efb-4818-b03b-5f75aeedfd03",
+        "avatar": "user12",
+        "sex": "user21",
+        "birthday": 23,
+        "country": "user12",
+        "city": "user12",
+        "street": "user12",
+        "memberTypeId": "basic"
+    }
+}
+2.14
+mutation($input: UpdatePostType!){
+    updatePost(input: $input) {
+        id
+        userId
+        title
+    }
+}
+variables
+{
+    "input": {
+        "id": "93a23cc1-ae5d-4737-851b-15dcbb63da5f",
+        "title": "22",
+        "content": "post12",
+        "userId": "beb9ba89-7efb-4818-b03b-5f75aeedfd03"
+    }
+}
+2.15
+mutation($input: UpdateMemberType!){
+    updateMemberType(input: $input) {
+        id
+        monthPostsLimit
+    }
+}
+variables
+{
+    "input": {
+        "id": "basic",
+        "discount": 10,
+        "monthPostsLimit": 20
+    }
+}
+2.16
+mutation($input: SubscribeType!){
+    subscribeTo(input: $input) {
+        id
+        fistName
+    }
+}
+variables
+{
+    "input": {
+        "id": "93a23cc1-ae5d-4737-851b-15dcbb63da5f",
+        "userId": "beb9ba89-7efb-4818-b03b-5f75aeedfd03"
+    }
+}
+2.16
+mutation($input: UnSubscribeType!){
+    unsubscribeFrom(input: $input) {
+        id
+        fistName
+    }
+}
+variables
+{
+    "input": {
+        "id": "93a23cc1-ae5d-4737-851b-15dcbb63da5f",
+        "userId": "beb9ba89-7efb-4818-b03b-5f75aeedfd03"
+    }
+}
+
+```
+все ID userId вам нужно будет поменять на свои при создания нового user post profiles зависимости от нужды.
