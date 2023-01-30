@@ -3,6 +3,9 @@ import { graphqlBodySchema } from './schema';
 import { GraphQLObjectType, GraphQLString, GraphQLSchema, GraphQLID, GraphQLInt, GraphQLList, graphql, GraphQLNonNull, GraphQLInputObjectType } from 'graphql';
 import { ProfileEntity } from '../../utils/DB/entities/DBProfiles';
 import { UserEntity } from '../../utils/DB/entities/DBUsers';
+import * as depthLimit from 'graphql-depth-limit';
+import { validate } from 'graphql/validation';
+
 
 const plugin: FastifyPluginAsyncJsonSchemaToTs = async (fastify): Promise<void> => {
   fastify.post(
@@ -42,7 +45,7 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (fastify): Promise<void> 
           userMemberType: {
             type: MemberTypes,
             async resolve(parent, args, contextValue, info) {
-              const profiles = (await fastify.db.profiles.findMany()).filter((profile: ProfileEntity)=> profile.userId === parent.id)[0]?.memberTypeId;
+              const profiles = (await contextValue.db.profiles.findMany()).filter((profile: ProfileEntity)=> profile.userId === parent.id)[0]?.memberTypeId;
               return contextValue.db.memberTypes.findOne({key: 'id', equals: profiles || '' })
             }
           },
@@ -114,52 +117,53 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (fastify): Promise<void> 
             type: UsersType,
             args: { id: { type: GraphQLID } },
             resolve(parent, args, contextValue, info) {
-              return fastify.db.users.findOne({key: 'id', equals: args.id!});
+              return contextValue.db.users.findOne({key: 'id', equals: args.id!});
             },
+            
           },
           users: {
             type: new GraphQLList(UsersType),
             async resolve(parent, args, contextValue, info) {
-              return fastify.db.users.findMany();
+              return contextValue.db.users.findMany();
             }
           },
           posts: {
             type: new GraphQLList(PostsType),
-            resolve(parent, args) {
-              return fastify.db.posts.findMany();
+            resolve(parent, args, contextValue) {
+              return contextValue.db.posts.findMany();
             }
           },
           post: {
             type: PostsType,
             args: { id: { type: GraphQLID } },
-            resolve(parent, args) {
-              return fastify.db.posts.findOne({key: 'id', equals: args.id!});
+            resolve(parent, args, contextValue) {
+              return contextValue.db.posts.findOne({key: 'id', equals: args.id!});
             },
           },
           profile: {
             type: ProfilesType,
             args: { id: { type: new GraphQLNonNull(GraphQLID) } },
-            resolve(parent, args) {
-              return fastify.db.profiles.findOne({key: 'id', equals: args.id!});
+            resolve(parent, args, contextValue) {
+              return contextValue.db.profiles.findOne({key: 'id', equals: args.id!});
             }
           },
           profiles: {
             type: new GraphQLList(ProfilesType),
-            resolve(parent, args) {
-              return fastify.db.profiles.findMany();
+            resolve(parent, args, contextValue) {
+              return contextValue.db.profiles.findMany();
             }
           },
           memberType: {
             type: MemberTypes,
             args: { id: { type: new GraphQLNonNull(GraphQLString) } },
-            resolve(parent, args) {
-              return fastify.db.memberTypes.findOne({key: 'id', equals: args.id});
+            resolve(parent, args, contextValue) {
+              return contextValue.db.memberTypes.findOne({key: 'id', equals: args.id});
             },
           },
           memberTypes: {
             type: new GraphQLList(MemberTypes),
-            resolve(parent, args) {
-              return fastify.db.memberTypes.findMany();
+            resolve(parent, args, contextValue) {
+              return contextValue.db.memberTypes.findMany();
             }
           },
         }
